@@ -45,7 +45,7 @@ ctx.setStrokeColor(accent.cgColor)
 ctx.setLineWidth(2.5); ctx.setLineCap(.round);ctx.setLineJoin(.round)
 ctx.move(to:CGPoint(x:315,y:230));ctx.addLine(to:CGPoint(x:405,y:230))
 ctx.move(to:CGPoint(x:392,y:217));ctx.addLine(to:CGPoint(x:405,y:230));ctx.addLine(to:CGPoint(x:392,y:243));ctx.strokePath()
-text("SLEEP",338,251,NSFont.monospacedSystemFont(ofSize:10,weight:.medium),accent)
+text("DRAG",348,251,NSFont.monospacedSystemFont(ofSize:10,weight:.medium),accent)
 NSGraphicsContext.restoreGraphicsState()
 let output = CommandLine.arguments.dropFirst().first ?? "packaging/dmg-background.png"
 try FileManager.default.createDirectory(atPath:(output as NSString).deletingLastPathComponent,withIntermediateDirectories:true)
