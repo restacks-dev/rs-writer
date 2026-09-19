@@ -1,0 +1,31 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  test-and-package:
+    runs-on: macos-15
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Test release safeguards
+        run: python3 -m unittest discover -s scripts/tests -v
+      - name: Test WriterCore
+        run: ./scripts/test.sh
+      - name: Build universal app (ad hoc signature)
+        run: ./scripts/build.sh
+      - name: Verify universal executable
+        run: lipo 'build/Build/Products/Release/RS Writer.app/Contents/MacOS/RS Writer' -verify_arch arm64 x86_64
+      - name: Build and verify preview DMG
+        run: ./scripts/make-dmg.sh 'build/Build/Products/Release/RS Writer.app' build/RS-Writer-preview.dmg

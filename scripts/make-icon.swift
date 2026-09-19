@@ -1,30 +1,29 @@
 import AppKit
 import Foundation
 
+// Rebuild the asset catalog from the checked-in master; no network or AI call.
+let root = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+let source = root.appendingPathComponent("packaging/icon-master.png")
 let output = URL(fileURLWithPath: CommandLine.arguments.dropFirst().first ?? "Resources/Assets.xcassets/AppIcon.appiconset", isDirectory: true)
+guard let master = NSImage(contentsOf: source) else { fatalError("Missing icon master: \(source.path)") }
 try FileManager.default.createDirectory(at: output, withIntermediateDirectories: true)
 var images: [[String: String]] = []
 for size in [16, 32, 128, 256, 512] {
     for scale in [1, 2] {
         let pixels = size * scale
-        let image = NSImage(size: NSSize(width: pixels, height: pixels), flipped: false) { rect in
-            let factor = CGFloat(pixels) / 1024
-            let context = NSGraphicsContext.current!.cgContext
-            context.scaleBy(x: factor, y: factor)
-            NSColor(calibratedRed: 0.13, green: 0.17, blue: 0.17, alpha: 1).setFill()
-            NSBezierPath(roundedRect: NSRect(x: 64, y: 64, width: 896, height: 896), xRadius: 196, yRadius: 196).fill()
-            NSColor(calibratedRed: 0.94, green: 0.94, blue: 0.89, alpha: 1).setFill()
-            for (y, width) in [(660.0, 520.0), (500.0, 520.0), (340.0, 340.0)] {
-                NSBezierPath(roundedRect: NSRect(x: 222, y: y, width: width, height: 50), xRadius: 25, yRadius: 25).fill()
-            }
-            NSColor(calibratedRed: 0.32, green: 0.77, blue: 0.73, alpha: 1).setFill()
-            NSBezierPath(roundedRect: NSRect(x: 620, y: 291, width: 45, height: 150), xRadius: 10, yRadius: 10).fill()
-            return true
-        }
-        let data = image.tiffRepresentation!
-        let png = NSBitmapImageRep(data: data)!.representation(using: .png, properties: [:])!
+        let bitmap = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: pixels, pixelsHigh: pixels,
+            bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true, isPlanar: false,
+            colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0)!
+        let context = NSGraphicsContext(bitmapImageRep: bitmap)!
+        NSGraphicsContext.saveGraphicsState()
+        NSGraphicsContext.current = context
+        context.imageInterpolation = .high
+        master.draw(in: NSRect(x: 0, y: 0, width: pixels, height: pixels),
+                    from: .zero, operation: .copy, fraction: 1)
+        context.flushGraphics()
+        NSGraphicsContext.restoreGraphicsState()
         let name = "icon_\(size)x\(size)@\(scale)x.png"
-        try png.write(to: output.appendingPathComponent(name))
+        try bitmap.representation(using: .png, properties: [:])!.write(to: output.appendingPathComponent(name))
         images.append(["idiom": "mac", "size": "\(size)x\(size)", "scale": "\(scale)x", "filename": name])
     }
 }
