@@ -1,0 +1,98 @@
+name: Signed macOS release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Validate tag, project version and changelog
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: ./scripts/release-notes.sh "$RELEASE_TAG"
+      - name: Test release safeguards
+        run: python3 -m unittest discover -s scripts/tests -v
+      - name: Test WriterCore
+        run: ./scripts/test.sh
+      - name: Sign, notarize and verify app and DMG
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+          APPLE_CERTIFICATE_BASE64: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+        run: ./scripts/signing-keychain.sh ./scripts/release.sh "$RELEASE_TAG"
+      - name: Remove temporary signing material
+        if: always()
+        shell: bash
+        run: |
+          if [[ -n "${RS_WRITER_KEYCHAIN_DIR:-}" && "$RS_WRITER_KEYCHAIN_DIR" == "$RUNNER_TEMP"/rs-writer-signing.* ]]; then
+            security delete-keychain "$RS_WRITER_KEYCHAIN_DIR/signing.keychain-db" >/dev/null 2>&1 || true
+            rm -rf "$RS_WRITER_KEYCHAIN_DIR"
+          fi
+      - name: Save verified release artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: signed-release
+          path: |
+            dist/*.dmg
+            dist/SHA256SUMS
+            dist/RELEASE_NOTES.md
+          if-no-files-found: error
+          retention-days: 7
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: signed-release
+          path: dist
+      - name: Create draft, verify uploaded checksum, publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Fail on API/auth errors too; never mistake these for a missing release.
+          gh api --paginate "repos/$GH_REPO/releases" --jq '.[].tag_name' > "$RUNNER_TEMP/existing-releases"
+          if grep -Fxq "$RELEASE_TAG" "$RUNNER_TEMP/existing-releases"; then
+            echo 'Release already exists. Inspect it before retrying; it will not be overwritten.' >&2
+            exit 1
+          fi
+          (cd dist && sha256sum --check SHA256SUMS)
+          gh api --method POST "repos/$GH_REPO/releases/generate-notes" \
+            -f "tag_name=$RELEASE_TAG" --jq '.body' > "$RUNNER_TEMP/generated-notes.md"
+          printf '\n---\n\n' >> dist/RELEASE_NOTES.md
+          cat "$RUNNER_TEMP/generated-notes.md" >> dist/RELEASE_NOTES.md
+          gh release create "$RELEASE_TAG" dist/*.dmg dist/SHA256SUMS dist/RELEASE_NOTES.md \
+            --verify-tag --draft --title "RS Writer $RELEASE_TAG" --notes-file dist/RELEASE_NOTES.md
+          gh release download "$RELEASE_TAG" --dir "$RUNNER_TEMP/release-download"
+          cmp dist/SHA256SUMS "$RUNNER_TEMP/release-download/SHA256SUMS"
+          cmp dist/RELEASE_NOTES.md "$RUNNER_TEMP/release-download/RELEASE_NOTES.md"
+          (cd "$RUNNER_TEMP/release-download" && sha256sum --check SHA256SUMS)
+          gh release edit "$RELEASE_TAG" --draft=false --latest

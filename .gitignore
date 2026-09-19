@@ -4,3 +4,10 @@ build/
 *.xcuserstate
 xcuserdata/
 ExportOptions.local.plist
+dist/
+*.p12
+*.p8
+*.mobileprovision
+*.provisionprofile
+.env
+.env.*

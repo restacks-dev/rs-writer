@@ -1,8 +1,16 @@
 # RS Writer
 
+<img src="packaging/icon-master.png" alt="RS Writer-icoon in de Re:stacks-huisstijl" width="112" height="112">
+
 Een native Markdown-schrijfapp voor **macOS 14 of nieuwer**, geïnspireerd op de rustige schrijfervaring van iA Writer. Gebouwd met SwiftUI, AppKit en WebKit. Eigen naam, code en vormgeving.
 
-## Starten
+## Installeren
+
+Download de nieuwste `RS-Writer-X.Y.Z-universal.dmg` via [GitHub Releases](https://github.com/yo-han/rs-writer/releases). Open de DMG, sleep **RS Writer** naar **Applications / Apps** en open de app vanuit Apps. De rustige achtergrond met pijl laat zien waar je de app naartoe sleept. Sluit bij een update eerst RS Writer af. Je teksten blijven in je gekozen bibliotheekmap.
+
+Releases worden met Developer ID ondertekend en door Apple genotariseerd voordat de workflow ze publiceert. macOS kan bij de eerste start nog de normale bevestiging voor een gedownloade app tonen. De repository is privé; downloads zijn beschikbaar voor gebruikers met repositorytoegang.
+
+## Lokaal starten
 
 Open `RSWriter.xcodeproj` in Xcode. Selecteer het schema **RSWriter**, kies **My Mac** en druk op **⌘R**. Voor een lokale build zonder Apple-account:
 
@@ -67,23 +75,13 @@ Schijfwerk gebeurt buiten de UI-thread. Bestandsacties gebruiken `NSFileCoordina
 
 De herstelgegevens en voorkeuren staan lokaal in de sandbox van de app, in de macOS-voorkeuren voor je bundle identifier. Ze worden niet door RS Writer naar een server verstuurd. Dit is bescherming tegen gewone opslagconflicten, geen realtime samenwerking: bij gelijktijdig offline bewerken op twee Macs kan de clouddienst zelf aanvullende conflictbestanden maken. Een onafhankelijke back-up blijft nuttig.
 
-## Verspreiden met je Apple Developer-account
+## Een release maken
 
-1. Voeg je Apple-account toe onder **Xcode → Settings → Accounts**.
-2. Open het project en selecteer target **RSWriter → Signing & Capabilities**.
-3. Kies je **Team**. Gebruik een eigen unieke bundle identifier, bijvoorbeeld `nl.jouwnaam.rswriter`. Houd dezelfde identifier aan voor volgende versies.
-4. Kies **Product → Archive** met een macOS-bestemming. Of gebruik:
+Werk na een batch wijzigingen [CHANGELOG.md](CHANGELOG.md) en het projectversienummer bij en push een overeenkomende versietag, bijvoorbeeld `v0.1.0`. GitHub Actions bouwt Apple Silicon en Intel in één app, ondertekent met Developer ID, notarizet en verifieert app en DMG, en publiceert daarna de download met changelog en SHA-256-checksum.
 
-   ```sh
-   ./scripts/archive.sh JOUWTEAMID nl.jouwnaam.rswriter
-   ```
+De eenmalige inrichting van de Apple-secrets en de volledige releaseprocedure staan in [docs/RELEASING.md](docs/RELEASING.md). Certificaten en wachtwoorden horen niet in de repository. Een lokale preview van de installer maak je na een build met `./scripts/preview-dmg.sh`; die heet expliciet `UNSIGNED-PREVIEW` en wordt nooit door de releaseflow gepubliceerd.
 
-5. Open het archief in **Organizer → Distribute App**. Kies de route voor **Developer ID / directe distributie**, laat Xcode ondertekenen en notarizen, en exporteer de app. De precieze schermlabels verschillen per Xcode-versie.
-6. Zet de geëxporteerde app op je Macs, bijvoorbeeld via AirDrop, en verplaats hem naar `/Applications`. Selecteer bij de eerste start op iedere Mac je bibliotheekmap.
-
-De app gebruikt App Sandbox, door de gebruiker gekozen lees-/schrijftoegang, security-scoped bookmarks en Hardened Runtime. Er is geen CloudKit-container nodig. De universele release bevat `arm64` en `x86_64`. Het project bevat geen Team ID, certificaten of sleutels. Notarization en ondertekening met jouw Developer ID moeten met jouw account worden uitgevoerd.
-
-Bronnen: [Apple: distributie](https://developer.apple.com/documentation/xcode/distributing-your-app-for-beta-testing-and-releases), [Apple: sandbox-bestandstoegang](https://developer.apple.com/documentation/security/accessing-files-from-the-macos-app-sandbox).
+De app gebruikt App Sandbox, door de gebruiker gekozen lees-/schrijftoegang, security-scoped bookmarks en Hardened Runtime. Er is geen CloudKit-container nodig.
 
 ## Ontwikkeling en tests
 
