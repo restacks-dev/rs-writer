@@ -9,6 +9,7 @@ final class WriterModel: ObservableObject {
     @Published var files: [LibraryFile] = []
     @Published var folders: [String] = []
     @Published var selectedURL: URL?
+    @Published private(set) var pendingSelectionURL: URL?
     @Published var text = ""
     @Published var query = ""
     @Published var selectedFolder: String? = nil
@@ -50,6 +51,7 @@ final class WriterModel: ObservableObject {
     }
 
     var title: String { selectedURL?.deletingPathExtension().lastPathComponent ?? "RS Writer" }
+    var listSelectionURL: URL? { pendingSelectionURL ?? selectedURL }
     var wordCount: Int { TextAnalysis.words(text) }
     var headings: [Heading] { TextAnalysis.headings(text) }
 
@@ -140,11 +142,18 @@ final class WriterModel: ObservableObject {
         }
     }
 
-    func select(_ url: URL) {
-        guard !busy, url != selectedURL else { return }
+    @discardableResult
+    func select(_ url: URL) -> Task<Void, Never>? {
+        guard !busy, url != selectedURL else { return nil }
+        // A List binding must reflect the click synchronously. Keep the editor's
+        // URL unchanged until its text is saved and the next document is loaded.
+        pendingSelectionURL = url
         busy = true
-        Task {
-            defer { busy = false }
+        return Task {
+            defer {
+                pendingSelectionURL = nil
+                busy = false
+            }
             guard await save() else { return }
             await load(url)
         }

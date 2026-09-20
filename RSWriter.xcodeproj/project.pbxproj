@@ -12,7 +12,9 @@
 		2B29696EFDEE5F4F9191E55D /* LibraryDiskTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 441995D207DF19275F38464C /* LibraryDiskTests.swift */; };
 		307FBA801B81A7491BDE9DED /* TextAnalysis.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8359CA83B0D1B90241087402 /* TextAnalysis.swift */; };
 		31A3C29D334FE42BAFFA6B15 /* MarkdownEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = D501FDA4F90DF40BF8742A8A /* MarkdownEditor.swift */; };
+		3A236A36BF13F9B5D59BBEBA /* NamePrompt.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FDEC65A7FE31D04573F2424 /* NamePrompt.swift */; };
 		4D23C31C4EE1DC1451C4ECB2 /* RecoveryDraft.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70225E74E1557F848F384F06 /* RecoveryDraft.swift */; };
+		6D2D64893ADA0972BB2C021E /* BrandPalette.swift in Sources */ = {isa = PBXBuildFile; fileRef = A42CE217437975B2BDE64FA8 /* BrandPalette.swift */; };
 		8DEC5285F4765B6B7B5F34FE /* marked.js in Resources */ = {isa = PBXBuildFile; fileRef = CD8FE1D76D0D0B2D5E485F26 /* marked.js */; };
 		953B0679075C768AF872301C /* WriterModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC12E76E164B61CDAC574CC4 /* WriterModel.swift */; };
 		9919BDAEF6C5F2FA74D16230 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 8A0FD5469EE685BA5F57FD46 /* Assets.xcassets */; };
@@ -45,6 +47,8 @@
 		8359CA83B0D1B90241087402 /* TextAnalysis.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextAnalysis.swift; sourceTree = "<group>"; };
 		8A0FD5469EE685BA5F57FD46 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		8C7EF551DD4D91EA21F25BD6 /* MarkdownPreview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownPreview.swift; sourceTree = "<group>"; };
+		8FDEC65A7FE31D04573F2424 /* NamePrompt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NamePrompt.swift; sourceTree = "<group>"; };
+		A42CE217437975B2BDE64FA8 /* BrandPalette.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrandPalette.swift; sourceTree = "<group>"; };
 		CD8FE1D76D0D0B2D5E485F26 /* marked.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = marked.js; sourceTree = "<group>"; };
 		D501FDA4F90DF40BF8742A8A /* MarkdownEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarkdownEditor.swift; sourceTree = "<group>"; };
 		E00B7ABBDCBBED33A0162A41 /* LibraryDisk.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryDisk.swift; sourceTree = "<group>"; };
@@ -96,9 +100,11 @@
 		C54F73725719FA98EA8989B4 /* RSWriter */ = {
 			isa = PBXGroup;
 			children = (
+				A42CE217437975B2BDE64FA8 /* BrandPalette.swift */,
 				70E4236668E72F2C7D376CB7 /* ContentView.swift */,
 				D501FDA4F90DF40BF8742A8A /* MarkdownEditor.swift */,
 				8C7EF551DD4D91EA21F25BD6 /* MarkdownPreview.swift */,
+				8FDEC65A7FE31D04573F2424 /* NamePrompt.swift */,
 				7386B2247325B50FDA47B1A4 /* RSWriterApp.swift */,
 				FC12E76E164B61CDAC574CC4 /* WriterModel.swift */,
 			);
@@ -221,10 +227,12 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				6D2D64893ADA0972BB2C021E /* BrandPalette.swift in Sources */,
 				ED549B327E5C30628C8D3EE5 /* ContentView.swift in Sources */,
 				CAD8AF4AA9AE1AFFF2073F27 /* LibraryDisk.swift in Sources */,
 				31A3C29D334FE42BAFFA6B15 /* MarkdownEditor.swift in Sources */,
 				1A47B229B50D335CC5961637 /* MarkdownPreview.swift in Sources */,
+				3A236A36BF13F9B5D59BBEBA /* NamePrompt.swift in Sources */,
 				E06CB9ED84368187AEDBEE29 /* RSWriterApp.swift in Sources */,
 				4D23C31C4EE1DC1451C4ECB2 /* RecoveryDraft.swift in Sources */,
 				307FBA801B81A7491BDE9DED /* TextAnalysis.swift in Sources */,
@@ -331,6 +339,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = Resources/RSWriter.entitlements;
 				COMBINE_HIDPI_IMAGES = YES;
 				INFOPLIST_FILE = Resources/Info.plist;
@@ -348,6 +357,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = Resources/RSWriter.entitlements;
 				COMBINE_HIDPI_IMAGES = YES;
 				INFOPLIST_FILE = Resources/Info.plist;

@@ -21,8 +21,8 @@ struct RSWriterApp: App {
                 Button("Bewaar als…", action: model.saveAs).keyboardShortcut("s", modifiers: [.command, .shift]).disabled(model.selectedURL == nil)
                 Button("Naam wijzigen…") { NotificationCenter.default.post(name: .writerRename, object: nil) }.disabled(model.selectedURL == nil)
                 Divider()
-                Button("Exporteer HTML…") { NotificationCenter.default.post(name: .writerExport, object: "html") }.disabled(!model.showPreview)
-                Button("Print / exporteer PDF…") { NotificationCenter.default.post(name: .writerExport, object: "pdf") }.keyboardShortcut("p").disabled(!model.showPreview)
+                Button("Exporteer HTML…") { NotificationCenter.default.post(name: .writerExport, object: "html") }.disabled(model.selectedURL == nil || model.busy)
+                Button("Print / exporteer PDF…") { NotificationCenter.default.post(name: .writerExport, object: "pdf") }.keyboardShortcut("p").disabled(model.selectedURL == nil || model.busy)
             }
             CommandGroup(after: .textEditing) {
                 Button("Zoek in document…") { NotificationCenter.default.post(name: .writerFind, object: nil) }.keyboardShortcut("f").disabled(model.selectedURL == nil)
@@ -47,7 +47,7 @@ struct RSWriterApp: App {
                 Toggle("Typemachinemodus", isOn: $model.typewriterMode).keyboardShortcut("t", modifiers: [.command, .shift])
             }
         }
-        Settings { WriterSettings().environmentObject(model) }
+        Settings { WriterSettings().environmentObject(model).tint(BrandPalette.accent) }
     }
 
     @ViewBuilder private func format(_ label: String, _ action: String, key: KeyEquivalent? = nil) -> some View {

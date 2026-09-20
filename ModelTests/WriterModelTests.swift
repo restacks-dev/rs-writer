@@ -1,4 +1,5 @@
 import Foundation
+import Combine
 
 // Compile against the real model without launching the app or using its preferences.
 @main
@@ -10,7 +11,11 @@ struct WriterModelTests {
         try await tests.testReselectionReplacesBookmarkAndNextLaunchRestoresLibrary()
         try await tests.testUnavailableDriveKeepsBookmarkAndFailedManualSelectionStillReportsError()
         try await tests.testFreshInstallShowsNormalWelcome()
-        print("Passed 4 library-access model checks.")
+        try await tests.testSelectionUpdatesImmediatelyAndSavesThePreviousDocument()
+        try await tests.testConflictSaveDoesNotBounceThePendingSelection()
+        try await tests.testSaveFailureKeepsThePreviousDocumentAndDraft()
+        try await tests.testReadFailureRestoresThePreviousSelection()
+        print("Passed 8 library-access and document-selection model checks.")
     }
 
     private func expect(_ condition: @autoclosure () throws -> Bool, line: UInt = #line) throws {
@@ -100,6 +105,89 @@ struct WriterModelTests {
             try expect(model.root == nil)
             try expect(model.error == nil)
             try expect(!model.libraryAccessNeedsRenewal)
+        }
+    }
+
+    private func withDocuments(_ check: (WriterModel, URL, URL) async throws -> Void) async throws {
+        try await withLibrary { defaults, directory in
+            let first = directory.appendingPathComponent("First.md")
+            let second = directory.appendingPathComponent("Second.md")
+            try Data("first".utf8).write(to: first)
+            try Data("second".utf8).write(to: second)
+            defaults.set("First.md", forKey: "lastFile:\(directory.path)")
+            let model = WriterModel(defaults: defaults, startAutomatically: false)
+            await model.useFolder(directory, persist: false)
+            // Use the same canonical URLs that Finder enumeration supplies to List.
+            let firstFile = model.files.first { $0.relativePath == "First.md" }!
+            let secondFile = model.files.first { $0.relativePath == "Second.md" }!
+            try expect(model.selectedURL == firstFile.url)
+            try await check(model, firstFile.url, secondFile.url)
+        }
+    }
+
+    func testSelectionUpdatesImmediatelyAndSavesThePreviousDocument() async throws {
+        try await withDocuments { model, first, second in
+            var selections: [URL?] = []
+            let observer = model.$pendingSelectionURL.combineLatest(model.$selectedURL)
+                .map { $0 ?? $1 }.removeDuplicates().sink { selections.append($0) }
+            defer { observer.cancel() }
+            model.edit("edited first")
+            let switching = model.select(second)
+            try expect(model.listSelectionURL == second)
+            try expect(model.selectedURL == first)
+            try expect(model.text == "edited first")
+            await switching?.value
+            try expect(model.selectedURL == second)
+            try expect(model.text == "second")
+            try expect(!model.busy && model.pendingSelectionURL == nil)
+            try expect(selections == [first, second])
+            try expect(String(contentsOf: first, encoding: .utf8) == "edited first")
+            try expect(String(contentsOf: second, encoding: .utf8) == "second")
+        }
+    }
+
+    func testConflictSaveDoesNotBounceThePendingSelection() async throws {
+        try await withDocuments { model, first, second in
+            var selections: [URL?] = []
+            let observer = model.$pendingSelectionURL.combineLatest(model.$selectedURL)
+                .map { $0 ?? $1 }.removeDuplicates().sink { selections.append($0) }
+            defer { observer.cancel() }
+            model.edit("local draft")
+            try Data("remote edit".utf8).write(to: first)
+            await model.select(second)?.value
+            try expect(selections == [first, second])
+            try expect(model.selectedURL == second && model.text == "second")
+            try expect(String(contentsOf: first, encoding: .utf8) == "remote edit")
+            let conflicts = model.files.filter { $0.url != first && $0.url != second }
+            try expect(conflicts.count == 1)
+            try expect(String(contentsOf: conflicts[0].url, encoding: .utf8) == "local draft")
+        }
+    }
+
+    func testSaveFailureKeepsThePreviousDocumentAndDraft() async throws {
+        try await withDocuments { model, first, second in
+            model.edit("unsaved first")
+            try FileManager.default.removeItem(at: first)
+            let switching = model.select(second)
+            try expect(model.listSelectionURL == second)
+            await switching?.value
+            try expect(model.listSelectionURL == first && model.selectedURL == first)
+            try expect(model.text == "unsaved first" && model.dirty)
+            try expect(model.recovery[first.path]?.text == "unsaved first")
+            try expect(model.error != nil && !model.busy && model.pendingSelectionURL == nil)
+            try expect(String(contentsOf: second, encoding: .utf8) == "second")
+        }
+    }
+
+    func testReadFailureRestoresThePreviousSelection() async throws {
+        try await withDocuments { model, first, second in
+            try FileManager.default.removeItem(at: second)
+            let switching = model.select(second)
+            try expect(model.listSelectionURL == second)
+            await switching?.value
+            try expect(model.listSelectionURL == first && model.selectedURL == first)
+            try expect(model.text == "first")
+            try expect(model.error != nil && !model.busy && model.pendingSelectionURL == nil)
         }
     }
 }

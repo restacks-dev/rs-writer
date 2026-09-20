@@ -73,7 +73,8 @@ struct MarkdownEditor: NSViewRepresentable {
         editor.typewriter = model.typewriterMode
         editor.textContainerInset = NSSize(width: 40, height: model.typewriterMode ? 180 : 52)
         editor.relayout()
-        editor.insertionPointColor = .systemTeal
+        editor.insertionPointColor = BrandPalette.nsAccent
+        editor.selectedTextAttributes = [.backgroundColor: BrandPalette.nsSelection, .foregroundColor: NSColor.textColor]
         editor.backgroundColor = .textBackgroundColor
         scroll.backgroundColor = .textBackgroundColor
         coordinator.style()
@@ -146,8 +147,8 @@ struct MarkdownEditor: NSViewRepresentable {
             apply("(?m)^#{1,6} .+$", source: source, storage: storage, attributes: [.font: NSFont.monospacedSystemFont(ofSize: parent.fontSize, weight: .bold)])
             apply("(?m)^(#{1,6} |[ \\t]*[-*+] |[ \\t]*[0-9]+\\. |[ \\t]*> ?)", source: source, storage: storage, attributes: [.foregroundColor: NSColor.tertiaryLabelColor])
             apply("\\*\\*[^*\\n]+\\*\\*|__[^_\\n]+__", source: source, storage: storage, attributes: [.font: NSFont.monospacedSystemFont(ofSize: parent.fontSize, weight: .bold)])
-            apply("`[^`\\n]+`", source: source, storage: storage, attributes: [.foregroundColor: NSColor.systemTeal])
-            apply("\\[[^\\]\\n]+\\]\\([^\\)\\n]+\\)", source: source, storage: storage, attributes: [.foregroundColor: NSColor.systemTeal])
+            apply("`[^`\\n]+`", source: source, storage: storage, attributes: [.foregroundColor: BrandPalette.nsAccent])
+            apply("\\[[^\\]\\n]+\\]\\([^\\)\\n]+\\)", source: source, storage: storage, attributes: [.foregroundColor: BrandPalette.nsAccent])
             if parent.model.focusMode, storage.length > 0 {
                 let location = min(editor.selectedRange().location, max(0, storage.length - 1))
                 let active = (source as NSString).paragraphRange(for: NSRange(location: location, length: 0))
