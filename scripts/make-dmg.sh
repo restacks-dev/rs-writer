@@ -55,6 +55,7 @@ hdiutil verify "$scratch/installer.dmg"
 mkdir "$scratch/mount"
 hdiutil attach "$scratch/installer.dmg" -mountpoint "$scratch/mount" -readonly -nobrowse -quiet
 mounted=1
+codesign --verify --deep --strict --verbose=2 "$scratch/mount/RS Writer.app"
 "$venv/bin/python" - "$scratch/mount" "$root" <<'PY'
 from pathlib import Path
 import plistlib

@@ -1,5 +1,18 @@
 # Validatie
 
+## Herstel van maptoegang — 20 september 2026
+
+- Vier geïsoleerde modelcontroles geslaagd tegen de productiecode: onbruikbare bookmark over twee starts, behouden herstelteksten, opnieuw kiezen en herstellen bij de volgende start, ontbrekende drive en een eerste installatie. De controles gebruiken tijdelijke mappen en eigen UserDefaults-suites.
+- `scripts/test.sh` voert deze modelcontroles voortaan ook in CI uit. De modeltests zijn lokaal met de Command Line Tools uitgevoerd; de volledige lokale Xcode-build blijft geblokkeerd door de nog niet geaccepteerde Xcode-licentie.
+- De startpagina biedt bij mislukte maprestauratie opnieuw de mapkiezer. Er wordt geen technische opstartalert getoond; een handmatige keuze die mislukt blijft wel een fout melden. De oorspronkelijke bookmark en herstelteksten blijven behouden totdat een map succesvol is gekozen.
+
+## Ondertekende release — 19 september 2026
+
+- GitHub-release `v0.1.0` gebouwd voor arm64 en x86_64, ondertekend met Developer ID en door Apple goedgekeurd. Zowel app als DMG hebben een notarization-ticket; Gatekeeper accepteert beide. De gedownloade DMG heeft de verwachte SHA-256-checksum.
+- De lokale controle vond extra `com.apple.FinderInfo` op de appbundle door `hide_extensions`. Gatekeeper accepteerde de app, maar `codesign --verify --deep --strict` wees die metadata af, ook na kopiëren uit de DMG. Verwijderen van uitsluitend die metadata laat de bestaande handtekening weer slagen.
+- Voor `0.1.1` zet de verpakking geen FinderInfo meer op de appbundle. `make-dmg.sh` controleert de strikte handtekening ook binnen de gemounte, definitieve DMG, voordat die naar de publicatiestap gaat.
+- Installatie op een andere fysieke Mac is nog niet getest.
+
 ## Releaseverpakking — 19 september 2026
 
 - Zeven releaseveiligheidstests geslaagd: versie/changelog-validatie, ontbrekende credentials, exacte Apple-status en keychain-cleanup bij fouten. Actionlint 1.7.12, shellsyntax, plist-validatie en `git diff --check` geslaagd.
@@ -11,7 +24,7 @@
 - In Finder zijn achtergrond, vlakke app-icoon en icoonposities van een eerdere preview visueel gecontroleerd. De definitieve achtergrond is daarna vereenvoudigd tot een rustige sleep-naar-Apps-indeling. De definitieve vensterhoogte is 392 punten om naast de 360 punten hoge achtergrond ook ruimte te bieden aan de titelbalk; het script controleert deze vensterafmetingen mee.
 - De preview gebruikt een kopie van de bestaande universele 0.1.0-build met het nieuwe vlakke icoon, een aparte preview-bundle identifier en ad-hoc-handtekening. De bestaande app is niet gewijzigd. Dit is geen nieuwe compilatie en geen bewijs van Developer ID-ondertekening of notarization.
 - Een nieuwe lokale Xcode-build is geblokkeerd doordat de Xcode-licentie nog niet is geaccepteerd. De licentie is niet automatisch geaccepteerd. Het maken van de DMG lukte wel via macOS-schijfservices buiten de sandbox.
-- Apple-notarization, een GitHub-release en installatie van de ondertekende download op een andere Mac zijn nog niet uitgevoerd; daarvoor moeten de gedocumenteerde GitHub-secrets worden ingericht.
+- Bovenstaande previewcontroles gingen vooraf aan de ondertekende release; zie de releasevalidatie bovenaan voor signing en notarization.
 
 ## Appvalidatie — 16 september 2026
 
@@ -31,7 +44,7 @@
 ## Nog niet end-to-end geverifieerd
 
 - Synchronisatie tussen twee fysieke Macs met iCloud Drive of Proton Drive.
-- Developer ID-ondertekening, notarization en installatie op een andere Mac.
+- Installatie op een andere fysieke Mac.
 - Runtime op een Intel-Mac of macOS 14; de architectuur is wel gebouwd.
 - PDF-printdialoog, HTML-export met lokale afbeeldingen en zeer grote bibliotheken.
 
