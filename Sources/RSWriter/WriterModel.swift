@@ -5,6 +5,7 @@ import UniformTypeIdentifiers
 @MainActor
 final class WriterModel: ObservableObject {
     @Published var root: URL?
+    @Published private(set) var libraryAccessNeedsRenewal = false
     @Published var files: [LibraryFile] = []
     @Published var folders: [String] = []
     @Published var selectedURL: URL?
@@ -34,6 +35,7 @@ final class WriterModel: ObservableObject {
     private var scopedURL: URL?
     private var refreshing = false
     private var lastSaveError: String?
+    private let defaults: UserDefaults
 
     var visibleFiles: [LibraryFile] {
         files.filter { file in
@@ -51,10 +53,12 @@ final class WriterModel: ObservableObject {
     var wordCount: Int { TextAnalysis.words(text) }
     var headings: [Heading] { TextAnalysis.headings(text) }
 
-    init() {
-        if let data = UserDefaults.standard.data(forKey: "recoveryV2") {
+    init(defaults: UserDefaults = .standard, startAutomatically: Bool = true) {
+        self.defaults = defaults
+        if let data = defaults.data(forKey: "recoveryV2") {
             recovery = (try? JSONDecoder().decode([String: RecoveryDraft].self, from: data)) ?? [:]
         }
+        guard startAutomatically else { return }
         Task { await restore() }
         monitor = Task { [weak self] in
             while !Task.isCancelled {
@@ -77,7 +81,8 @@ final class WriterModel: ObservableObject {
         Task { await useFolder(url) }
     }
 
-    private func restore() async {
+    func restore() async {
+        guard root == nil, !busy else { return }
         #if DEBUG
         // Only a separately identified Debug test bundle supplies this key.
         if let path = Bundle.main.object(forInfoDictionaryKey: "RSWriterDemoLibrary") as? String {
@@ -85,15 +90,22 @@ final class WriterModel: ObservableObject {
             return
         }
         #endif
-        guard let data = UserDefaults.standard.data(forKey: "libraryBookmark") else { return }
+        guard let data = defaults.data(forKey: "libraryBookmark") else { return }
         do {
             var stale = false
-            let url = try URL(resolvingBookmarkData: data, options: .withSecurityScope, bookmarkDataIsStale: &stale)
-            await useFolder(url, persist: true)
-        } catch { self.error = "De opgeslagen map kon niet worden geopend. Kies de bibliotheekmap opnieuw.\n\(error.localizedDescription)" }
+            let url = try URL(resolvingBookmarkData: data, options: [.withSecurityScope, .withoutUI], bookmarkDataIsStale: &stale)
+            await useFolder(url, restoring: true)
+        } catch { requestLibraryAccess() }
     }
 
-    func useFolder(_ url: URL, persist: Bool = true) async {
+    private func requestLibraryAccess() {
+        // Keep the bookmark for a disconnected drive and retain recovery drafts.
+        // A signing-identity change can also make an otherwise valid bookmark unusable.
+        libraryAccessNeedsRenewal = true
+        status = "Kies je bibliotheekmap opnieuw"
+    }
+
+    func useFolder(_ url: URL, persist: Bool = true, restoring: Bool = false) async {
         guard !busy else { return }
         busy = true
         defer { busy = false }
@@ -105,6 +117,7 @@ final class WriterModel: ObservableObject {
             scopedURL?.stopAccessingSecurityScopedResource()
             scopedURL = accessed ? url : nil
             root = url
+            libraryAccessNeedsRenewal = false
             files = snapshot.files
             folders = snapshot.folders
             selectedURL = nil
@@ -113,16 +126,17 @@ final class WriterModel: ObservableObject {
             dirty = false
             selectedFolder = nil
             query = ""
-            favorites = Set(UserDefaults.standard.stringArray(forKey: "favorites:\(url.path)") ?? [])
-            if let bookmark { UserDefaults.standard.set(bookmark, forKey: "libraryBookmark") }
+            favorites = Set(defaults.stringArray(forKey: "favorites:\(url.path)") ?? [])
+            if let bookmark { defaults.set(bookmark, forKey: "libraryBookmark") }
             status = "\(files.count) documenten"
-            if let path = UserDefaults.standard.string(forKey: "lastFile:\(url.path)"),
+            if let path = defaults.string(forKey: "lastFile:\(url.path)"),
                let file = files.first(where: { $0.relativePath == path }) {
                 await load(file.url)
             } else if let first = visibleFiles.first { await load(first.url) }
         } catch {
             if accessed { url.stopAccessingSecurityScopedResource() }
-            self.error = error.localizedDescription
+            if restoring { requestLibraryAccess() }
+            else { self.error = error.localizedDescription }
         }
     }
 
@@ -152,7 +166,7 @@ final class WriterModel: ObservableObject {
             } else { clearRecovery(url) }
             status = dirty ? "Herstelde tekst · nog niet opgeslagen" : "Opgeslagen"
             if let root, let file = files.first(where: { $0.url == url }) {
-                UserDefaults.standard.set(file.relativePath, forKey: "lastFile:\(root.path)")
+                defaults.set(file.relativePath, forKey: "lastFile:\(root.path)")
             }
         } catch { self.error = error.localizedDescription }
     }
@@ -320,7 +334,7 @@ final class WriterModel: ObservableObject {
     func toggleFavorite(_ file: LibraryFile) {
         if favorites.contains(file.relativePath) { favorites.remove(file.relativePath) }
         else { favorites.insert(file.relativePath) }
-        if let root { UserDefaults.standard.set(Array(favorites), forKey: "favorites:\(root.path)") }
+        if let root { defaults.set(Array(favorites), forKey: "favorites:\(root.path)") }
     }
 
     private func clearRecovery(_ url: URL) {
@@ -329,6 +343,6 @@ final class WriterModel: ObservableObject {
     }
 
     private func persistRecovery() {
-        if let data = try? JSONEncoder().encode(recovery) { UserDefaults.standard.set(data, forKey: "recoveryV2") }
+        if let data = try? JSONEncoder().encode(recovery) { defaults.set(data, forKey: "recoveryV2") }
     }
 }

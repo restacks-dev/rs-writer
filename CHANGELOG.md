@@ -4,6 +4,14 @@ Belangrijke wijzigingen per release. Versies volgen Semantic Versioning; de datu
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-09-20
+
+### Opgelost
+
+- Bij onbruikbare opgeslagen maptoegang vraagt de app om de bibliotheek opnieuw te kiezen, zonder technische foutmelding bij het starten. Documenten en herstelteksten blijven behouden.
+- De DMG bewaart de app-handtekening zonder extra Finder-metadata op de appbundle.
+- De release controleert nu ook de strikte handtekening van de app binnen de uiteindelijke DMG.
+
 ## [0.1.0] - 2026-09-19
 
 ### Nieuw

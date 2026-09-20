@@ -61,11 +61,16 @@ struct ContentView: View {
             Spacer()
             Image(systemName: "text.cursor").font(.system(size: 48, weight: .ultraLight)).foregroundStyle(.teal)
             VStack(spacing: 12) {
-                Text("Een plek voor je woorden.").font(.system(size: 32, weight: .medium, design: .serif))
-                Text("Jouw tekst. Jouw bestanden. Op elke Mac.")
-                    .font(.system(size: 15)).foregroundStyle(.secondary)
+                Text(model.libraryAccessNeedsRenewal ? "Open je bibliotheek opnieuw." : "Een plek voor je woorden.")
+                    .font(.system(size: 32, weight: .medium, design: .serif))
+                Text(model.libraryAccessNeedsRenewal
+                     ? "RS Writer kan de opgeslagen maptoegang niet herstellen.\nVerbind je drive indien nodig en kies dezelfde map opnieuw. Je documenten blijven bewaard."
+                     : "Jouw tekst. Jouw bestanden. Op elke Mac.")
+                    .font(.system(size: 15)).foregroundStyle(.secondary).multilineTextAlignment(.center)
             }
-            Button(action: model.chooseFolder) { Label("Kies je bibliotheekmap", systemImage: "folder") }
+            Button(action: model.chooseFolder) {
+                Label(model.libraryAccessNeedsRenewal ? "Kies je bibliotheekmap opnieuw" : "Kies je bibliotheekmap", systemImage: "folder")
+            }
                 .buttonStyle(.borderedProminent).tint(.teal).controlSize(.large).padding(.top, 10)
             Text("Een map op iCloud Drive, Dropbox of je gedeelde drive.\nRS Writer bewaart je documenten als gewone Markdown-bestanden.")
                 .font(.callout).foregroundStyle(.secondary).multilineTextAlignment(.center).lineSpacing(5)

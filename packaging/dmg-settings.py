@@ -24,7 +24,8 @@ arrange_by = None
 icon_size = 96
 text_size = 13
 label_pos = "bottom"
-hide_extensions = ["RS Writer.app"]
+# Do not set FinderInfo on the signed bundle; strict codesign rejects it.
+hide_extensions = []
 icon_locations = {
     "RS Writer.app": (180, 230),
     "Applications": (540, 230),
